@@ -86,6 +86,13 @@ fn generate_question(mn: u32, mx: u32, allowed_ops: &Vec<Operator>) -> Question 
     }
 } 
 
+enum State {
+    Correct,
+    Incorrect,
+    Answer,
+    Ask,
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args: Vec<String> = std::env::args().collect();
     let mut opts = Parser::new(&args, "hp");
@@ -119,11 +126,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     enable_raw_mode()?;
 
     let mut answer_buffer = String::with_capacity(32); // answers are short
+    let mut current_state = State::Ask;
     loop {
-        execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
-        let q = generate_question(mn, mx, &allowed_ops);
-        write!(io::stdout(), "{} =", &q)?;
-        io::stdout().flush()?;
+        match current_state {
+            State::Ask => {
+                execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
+                let q = generate_question(mn, mx, &allowed_ops);
+                write!(io::stdout(), "{} =", &q)?;
+                io::stdout().flush()?;
+            },
+            State::Incorrect {
+                // print its incorrect
+            },
+            State::Correct {
+                
+            },
+            State::Answer => ()
+        }
         match event::read()? {
             Event::Key(event) => {
                 match event.code {
