@@ -1,12 +1,13 @@
 use crossterm::{
-    event::{self, KeyEvent, Event, KeyCode},
+    event::{self, Event, KeyCode},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{disable_raw_mode, enable_raw_mode, Clear, EnterAlternateScreen, LeaveAlternateScreen, ClearType},
 };
 use getopt::{Opt, Parser};
 use std::{io::{self, Write}, string::{String, ToString}, vec::Vec};
 use rand::prelude::*;
 use std::fmt;
+use std::println;
 
 #[derive(Copy, Clone)]
 enum Operator {
@@ -23,6 +24,18 @@ impl fmt::Display for Operator {
            Operator::Minus => write!(f, "-"),
            Operator::Multi => write!(f, "*"),
            Operator::Div => write!(f, "/"),
+        }
+    }
+}
+
+impl From<char> for Operator {
+    fn from(c: char) -> Operator {
+        match c {
+            '+' => Operator::Plus,
+            '-' => Operator::Minus,
+            '*' => Operator::Multi,
+            '/' => Operator::Div,
+            c => panic!("char '{}' cannot be converted to Operator", c)
         }
     }
 }
@@ -55,12 +68,15 @@ impl fmt::Display for Question {
     }
 }
 
-fn generate_question(mn: u32, mx: u32, op: Operator) -> Question {
+fn generate_question(mn: u32, mx: u32, allowed_ops: &Vec<Operator>) -> Question {
     // uniform sampling distribution within the bounds set
     // let mut uniform_sampler = rand::distributions::Uniform::new_inclusive(bound.min, bound.max);
     let mut rng = rand::thread_rng();
     let val1 = rng.gen_range(mn..mx) as i32;
     let val2 = rng.gen_range(mn..mx) as i32;
+    let l = allowed_ops.len();
+    let i = rng.gen_range(0..l);
+    let op = allowed_ops[i];
     let answer = operate(&op, &val1, &val2);
     return Question {
         val1,
@@ -72,39 +88,42 @@ fn generate_question(mn: u32, mx: u32, op: Operator) -> Question {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args: Vec<String> = std::env::args().collect();
-    let mut opts = Parser::new(&args, "ab:");
+    let mut opts = Parser::new(&args, "hp");
 
-    let mut a_flag = false;
-    let mut b_flag = String::new();
+    let mut operators = String::new();
+    let mut bounds = String::new();
     loop {
         match opts.next().transpose()? {
             None => break,
             Some(opt) => match opt {
-                Opt('a', None) => a_flag = true,
-                Opt('b', Some(string)) => b_flag = string.clone(),
+                Opt('h', None) => println!("menth - mental math trainer"),
+                Opt('p', Some(s)) => operators = s.clone(),
+                Opt('r', Some(s)) => bounds = s.clone(),
                 _ => unreachable!(),
             },
         }
     }
 
-    let args = args.split_off(opts.index());
-    println!("{}, {:?}", b_flag, a_flag);
+    let mut allowed_ops: Vec<Operator> = Vec::new();
+    // add choices for operators
+    for c in operators.chars() {
+        allowed_ops.push(c.into());
+    }
+
+    // set ranges
+    let split: Vec<&str> = bounds.split(",").collect();
+    let mn = split.get(0).unwrap().parse::<u32>().unwrap();
+    let mx = split.get(1).unwrap().parse::<u32>().unwrap() + 1;
 
     execute!(io::stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
 
-    // generate two numbers in a range
-    //
-    // return a struct of arg, operand, arg, answer
-    // print args + operand to screen
-    // take input with enter as submit
-    // if correct move on, if wrong clear and reprint
-    let q = generate_question(0, 20, Operator::Multi);
-
-    write!(io::stdout(), "{} =", &q)?;
-    io::stdout().flush()?;
-
+    let mut answer_buffer = String::with_capacity(32); // answers are short
     loop {
+        execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
+        let q = generate_question(mn, mx, &allowed_ops);
+        write!(io::stdout(), "{} =", &q)?;
+        io::stdout().flush()?;
         match event::read()? {
             Event::Key(event) => {
                 match event.code {
