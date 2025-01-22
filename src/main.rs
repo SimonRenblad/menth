@@ -1,5 +1,5 @@
 use crossterm::{
-    cursor::MoveTo, event::{self, Event, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen}
+    cursor::MoveTo, event::{self, Event, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen}
 };
 use getopt::{Opt, Parser};
 use std::{io::{self, Write}, string::{String, ToString}, vec::Vec};
@@ -86,8 +86,24 @@ enum State {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    match run() {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            if is_raw_mode_enabled()? {
+                disable_raw_mode()?;
+            }
+            execute!(io::stdout(), LeaveAlternateScreen)?;
+            Err(e)
+        }
+    }
+}
+
+fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     let mut opts = Parser::new(&args, "hp:r:");
+
+    execute!(io::stdout(), EnterAlternateScreen)?;
+    enable_raw_mode()?;
 
     let mut operators = String::new();
     let mut bounds = String::new();
@@ -113,9 +129,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let split: Vec<&str> = bounds.split(",").collect();
     let mn = split.get(0).unwrap().parse::<u32>().unwrap();
     let mx = split.get(1).unwrap().parse::<u32>().unwrap() + 1;
-
-    execute!(io::stdout(), EnterAlternateScreen)?;
-    enable_raw_mode()?;
 
     execute!(io::stdout(), MoveTo(1, 1))?;
 
