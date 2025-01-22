@@ -94,8 +94,8 @@ enum State {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut args: Vec<String> = std::env::args().collect();
-    let mut opts = Parser::new(&args, "hp");
+    let args: Vec<String> = std::env::args().collect();
+    let mut opts = Parser::new(&args, "hp:r:");
 
     let mut operators = String::new();
     let mut bounds = String::new();
@@ -127,27 +127,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut answer_buffer = String::with_capacity(32); // answers are short
     let mut current_state = State::Ask;
+    let mut current_question = Question { val1: 0, val2: 0, answer: 0, op: Operator::Plus };
     loop {
         match current_state {
             State::Ask => {
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
-                let q = generate_question(mn, mx, &allowed_ops);
-                write!(io::stdout(), "{} =", &q)?;
+                current_question = generate_question(mn, mx, &allowed_ops);
+                write!(io::stdout(), "{} =", &current_question)?;
                 io::stdout().flush()?;
+                answer_buffer.clear();
+                current_state = State::Answer;
             },
-            State::Incorrect {
-                // print its incorrect
+            State::Incorrect => {
+                execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
+                write!(io::stdout(), "Incorrect!")?;
+                io::stdout().flush()?;
+                current_state = State::Ask;
             },
-            State::Correct {
-                
+            State::Correct => {
+                execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
+                write!(io::stdout(), "Correct!")?;
+                io::stdout().flush()?;
+                current_state = State::Ask;
             },
             State::Answer => ()
         }
         match event::read()? {
             Event::Key(event) => {
                 match event.code {
-                    KeyCode::Char(c) => { write!(io::stdout(), "{}", c.to_string())?; io::stdout().flush()?;  },
-                    KeyCode::Enter => break,
+                    KeyCode::Char(c) => {
+                        if matches!(current_state, State::Answer) {
+                            write!(io::stdout(), "{}", c.to_string())?;
+                            io::stdout().flush()?;
+                            answer_buffer.push(c);
+                        }
+                    },
+                    KeyCode::Enter => {
+                        if matches!(current_state, State::Answer) {
+                            let ans: i32 = answer_buffer.parse()?;
+                            if ans == current_question.answer {
+                                current_state = State::Correct
+                            } else {
+                                current_state = State::Incorrect
+                            }
+                        }
+                    },
+                    KeyCode::Esc => break,
                     _ => ()
                 }
             },            
