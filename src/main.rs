@@ -1,7 +1,5 @@
 use crossterm::{
-    event::{self, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, Clear, EnterAlternateScreen, LeaveAlternateScreen, ClearType},
+    cursor::MoveTo, event::{self, Event, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen}
 };
 use getopt::{Opt, Parser};
 use std::{io::{self, Write}, string::{String, ToString}, vec::Vec};
@@ -38,12 +36,6 @@ impl From<char> for Operator {
             c => panic!("char '{}' cannot be converted to Operator", c)
         }
     }
-}
-
-struct Bound {
-    max: u32,
-    min: u32,
-    op: Operator 
 }
 
 fn operate(op: &Operator, x1: &i32, x2: &i32) -> i32 {
@@ -125,26 +117,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     execute!(io::stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
 
+    execute!(io::stdout(), MoveTo(1, 1))?;
+
     let mut answer_buffer = String::with_capacity(32); // answers are short
     let mut current_state = State::Ask;
     let mut current_question = Question { val1: 0, val2: 0, answer: 0, op: Operator::Plus };
     loop {
         match current_state {
             State::Ask => {
+                execute!(io::stdout(), MoveTo(1, 1))?;
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
                 current_question = generate_question(mn, mx, &allowed_ops);
-                write!(io::stdout(), "{} =", &current_question)?;
+                write!(io::stdout(), "{} = ", &current_question)?;
                 io::stdout().flush()?;
                 answer_buffer.clear();
                 current_state = State::Answer;
             },
             State::Incorrect => {
+                execute!(io::stdout(), MoveTo(1, 1))?;
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
                 write!(io::stdout(), "Incorrect!")?;
                 io::stdout().flush()?;
                 current_state = State::Ask;
             },
             State::Correct => {
+                execute!(io::stdout(), MoveTo(1, 1))?;
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
                 write!(io::stdout(), "Correct!")?;
                 io::stdout().flush()?;
