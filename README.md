@@ -7,3 +7,4 @@ menth is a simple terminal application for practicing mental math.
 - [ ] reset writing to a set location
 - [ ] add bounded number of rounds
 - [ ] add statistics
+- [ ] better defaults
