@@ -127,8 +127,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     // set ranges
     let split: Vec<&str> = bounds.split(",").collect();
-    let mn = split.get(0).unwrap().parse::<u32>().unwrap();
-    let mx = split.get(1).unwrap().parse::<u32>().unwrap() + 1;
+    let mn = split.get(0).unwrap().parse::<u32>()?;
+    let mx = split.get(1).unwrap().parse::<u32>()? + 1;
 
     execute!(io::stdout(), MoveTo(1, 1))?;
 
@@ -174,11 +174,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     },
                     KeyCode::Enter => {
                         if matches!(current_state, State::Answer) {
-                            let ans: i32 = answer_buffer.parse()?;
-                            if ans == current_question.answer {
-                                current_state = State::Correct
-                            } else {
-                                current_state = State::Incorrect
+                            current_state = match answer_buffer.parse::<i32>() {
+                                Ok(ans) if ans == current_question.answer => State::Correct,
+                                _ => State::Incorrect
                             }
                         }
                     },
