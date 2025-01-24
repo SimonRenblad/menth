@@ -175,7 +175,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     KeyCode::Enter => {
                         if matches!(current_state, State::Answer) {
                             current_state = match answer_buffer.parse::<i32>() {
-                                Ok(ans) if ans == current_question.answer => State::Correct,
+                                Ok(ans) if ans == current_question.answer => State::Ask,
                                 _ => State::Incorrect
                             }
                         }
