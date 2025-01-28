@@ -1,27 +1,37 @@
 use crossterm::{
-    cursor::MoveTo, event::{self, Event, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen}
+    cursor::{self, MoveTo},
+    event::{self, Event, KeyCode},
+    execute,
+    terminal::{
+        self, disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, Clear, ClearType,
+        EnterAlternateScreen, LeaveAlternateScreen,
+    },
 };
 use getopt::{Opt, Parser};
-use std::{io::{self, Write}, string::{String, ToString}, vec::Vec};
 use rand::prelude::*;
 use std::fmt;
 use std::println;
+use std::{
+    io::{self, Write},
+    string::{String, ToString},
+    vec::Vec,
+};
 
 #[derive(Copy, Clone)]
 enum Operator {
     Plus,
     Minus,
     Multi,
-    Div
+    Div,
 }
 
 impl fmt::Display for Operator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-           Operator::Plus => write!(f, "+"),
-           Operator::Minus => write!(f, "-"),
-           Operator::Multi => write!(f, "*"),
-           Operator::Div => write!(f, "/"),
+            Operator::Plus => write!(f, "+"),
+            Operator::Minus => write!(f, "-"),
+            Operator::Multi => write!(f, "*"),
+            Operator::Div => write!(f, "/"),
         }
     }
 }
@@ -33,7 +43,7 @@ impl From<char> for Operator {
             '-' => Operator::Minus,
             '*' => Operator::Multi,
             '/' => Operator::Div,
-            c => panic!("char '{}' cannot be converted to Operator", c)
+            c => panic!("char '{}' cannot be converted to Operator", c),
         }
     }
 }
@@ -43,7 +53,7 @@ fn operate(op: &Operator, x1: &i32, x2: &i32) -> i32 {
         Operator::Plus => x1 + x2,
         Operator::Minus => x1 - x2,
         Operator::Multi => x1 * x2,
-        Operator::Div => x1 / x2
+        Operator::Div => x1 / x2,
     }
 }
 
@@ -74,9 +84,9 @@ fn generate_question(mn: u32, mx: u32, allowed_ops: &Vec<Operator>) -> Question 
         val1,
         val2,
         answer,
-        op
-    }
-} 
+        op,
+    };
+}
 
 enum State {
     Correct,
@@ -134,7 +144,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut answer_buffer = String::with_capacity(32); // answers are short
     let mut current_state = State::Ask;
-    let mut current_question = Question { val1: 0, val2: 0, answer: 0, op: Operator::Plus };
+    let mut current_question = Question {
+        val1: 0,
+        val2: 0,
+        answer: 0,
+        op: Operator::Plus,
+    };
     loop {
         match current_state {
             State::Ask => {
@@ -145,46 +160,52 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 io::stdout().flush()?;
                 answer_buffer.clear();
                 current_state = State::Answer;
-            },
+            }
             State::Incorrect => {
                 execute!(io::stdout(), MoveTo(1, 1))?;
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
                 write!(io::stdout(), "Incorrect!")?;
                 io::stdout().flush()?;
                 current_state = State::Ask;
-            },
+            }
             State::Correct => {
                 execute!(io::stdout(), MoveTo(1, 1))?;
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
                 write!(io::stdout(), "Correct!")?;
                 io::stdout().flush()?;
                 current_state = State::Ask;
-            },
-            State::Answer => ()
+            }
+            State::Answer => (),
         }
         match event::read()? {
-            Event::Key(event) => {
-                match event.code {
-                    KeyCode::Char(c) => {
-                        if matches!(current_state, State::Answer) {
-                            write!(io::stdout(), "{}", c.to_string())?;
-                            io::stdout().flush()?;
-                            answer_buffer.push(c);
-                        }
-                    },
-                    KeyCode::Enter => {
-                        if matches!(current_state, State::Answer) {
-                            current_state = match answer_buffer.parse::<i32>() {
-                                Ok(ans) if ans == current_question.answer => State::Ask,
-                                _ => State::Incorrect
-                            }
-                        }
-                    },
-                    KeyCode::Esc => break,
-                    _ => ()
+            Event::Key(event) => match event.code {
+                KeyCode::Char(c) => {
+                    if matches!(current_state, State::Answer) {
+                        write!(io::stdout(), "{}", c.to_string())?;
+                        io::stdout().flush()?;
+                        answer_buffer.push(c);
+                    }
                 }
-            },            
-            _ => ()
+                KeyCode::Enter => {
+                    if matches!(current_state, State::Answer) {
+                        current_state = match answer_buffer.parse::<i32>() {
+                            Ok(ans) if ans == current_question.answer => State::Ask,
+                            _ => State::Incorrect,
+                        }
+                    }
+                }
+                KeyCode::Backspace | KeyCode::Delete => {
+                    if matches!(current_state, State::Answer) {
+                        if let Some(_) = answer_buffer.pop() {
+                            execute!(io::stdout(), cursor::MoveLeft(1))?;
+                            execute!(io::stdout(), Clear(ClearType::UntilNewLine))?;
+                        }
+                    }
+                }
+                KeyCode::Esc => break,
+                _ => (),
+            },
+            _ => (),
         }
     }
 
