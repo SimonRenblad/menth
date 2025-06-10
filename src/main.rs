@@ -89,7 +89,6 @@ fn generate_question(mn: u32, mx: u32, allowed_ops: &Vec<Operator>) -> Question 
 }
 
 enum State {
-    Correct,
     Incorrect,
     Answer,
     Ask,
@@ -164,14 +163,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             State::Incorrect => {
                 execute!(io::stdout(), MoveTo(1, 1))?;
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
-                write!(io::stdout(), "Incorrect!")?;
-                io::stdout().flush()?;
-                current_state = State::Ask;
-            }
-            State::Correct => {
-                execute!(io::stdout(), MoveTo(1, 1))?;
-                execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
-                write!(io::stdout(), "Correct!")?;
+                write!(io::stdout(), "Incorrect! Answer: {}", &current_question.answer)?;
                 io::stdout().flush()?;
                 current_state = State::Ask;
             }
