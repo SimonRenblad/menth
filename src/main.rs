@@ -3,7 +3,7 @@ use crossterm::{
     event::{self, Event, KeyCode},
     execute,
     terminal::{
-        self, disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, Clear, ClearType,
+        disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, Clear, ClearType,
         EnterAlternateScreen, LeaveAlternateScreen,
     },
 };
