@@ -163,7 +163,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             State::Incorrect => {
                 execute!(io::stdout(), MoveTo(1, 1))?;
                 execute!(io::stdout(), Clear(ClearType::CurrentLine))?;
-                write!(io::stdout(), "Incorrect! Answer: {}", &current_question.answer)?;
+                write!(
+                    io::stdout(),
+                    "Incorrect! Answer: {}",
+                    &current_question.answer
+                )?;
                 io::stdout().flush()?;
                 current_state = State::Ask;
             }
